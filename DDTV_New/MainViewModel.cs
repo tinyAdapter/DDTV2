@@ -26,9 +26,9 @@ namespace DDTV_New
               .WhenAnyValue(x => x.serverVdb)
               .Select(delay =>
               {
-                  if (delay == -1.0) return "数据源服务器(vtbs)延迟: 未测试";
-                  if (delay == -2.0) return "数据源服务器(vtbs)延迟: 连接超时";
-                  return "数据源服务器(vtbs)延迟: " + delay + "ms";
+                  if (delay == -1.0) return $"数据源服务器({VtbsMoe.Instance.延迟最低的域名})延迟: 未测试";
+                  if (delay == -2.0) return $"数据源服务器({VtbsMoe.Instance.延迟最低的域名})延迟: 连接超时";
+                  return $"数据源服务器({VtbsMoe.Instance.延迟最低的域名})延迟: " + delay + "ms";
               })
               .ToProperty(this, x => x.serverVdbText);
 

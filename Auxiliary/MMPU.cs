@@ -64,7 +64,7 @@ namespace Auxiliary
         public static int 数据源 = 0;//0：vdb   1：B API
         public static bool 是否第一次使用DDTV = true;
         public static bool 是否有新版本 = true;
-       
+
         public static int 启动模式 = 0;//0：DDTV,1：DDTVLive
 
         /// <summary>
@@ -567,9 +567,12 @@ namespace Auxiliary
                 spwatch.Stop();
                 return spwatch.Elapsed.TotalMilliseconds;
             }
-            catch (Exception)
+            catch (WebException e)
             {
-
+                if (((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound)
+                {
+                    // error 404, do what you need to do
+                }
                 return -1;
             }
         }

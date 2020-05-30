@@ -17,6 +17,7 @@ using System.Net.WebSockets;
 using System.Text.RegularExpressions;
 using System.IO.Compression;
 using Auxiliary.LiveChatScript;
+using System.Net.NetworkInformation;
 
 namespace Auxiliary
 {
@@ -73,7 +74,7 @@ namespace Auxiliary
         {
             try
             {
-                JArray JO = (JArray)JsonConvert.DeserializeObject(MMPU.返回网页内容_GET("https://api.vtbs.moe/v1/living",8000));
+                JArray JO = (JArray)JsonConvert.DeserializeObject(MMPU.返回网页内容_GET(VtbsMoe.Instance.延迟最低的地址 + "/v1/living", 8000));
                 foreach (var roomtask in RoomList)
                 {
                     roomtask.直播状态 = false;
@@ -723,6 +724,93 @@ namespace Auxiliary
             request.Timeout = Timeout;
             request.ReadWriteTimeout = Timeout;
             return request;
+        }
+    }
+
+    public class VtbsMoe
+    {
+        /* 单例模板 */
+        private static readonly Lazy<VtbsMoe> lazy = new Lazy<VtbsMoe>(() =>
+           {
+               var instance = new VtbsMoe();
+               instance.全部域名 = new List<string>
+               {
+                   "api.vtbs.moe",
+                   "api.tokyo.vtbs.moe",
+                   "vtbs.musedash.moe"
+               };
+               instance.延迟最低的域名 = instance.全部域名[0];
+
+               instance.启动周期性更新低延迟域名();
+
+               return instance;
+           });
+        public static VtbsMoe Instance { get { return lazy.Value; } }
+        private VtbsMoe() { }
+        /* 单例模板 */
+
+        public string 延迟最低的地址 { get => "https://" + 延迟最低的域名; }
+        public string 延迟最低的域名 { get; private set; }
+        public int 更新间隔 { get; set; } = 30000;
+
+        public List<string> 全部域名 { get; private set; }
+
+        public void 启动周期性更新低延迟域名()
+        {
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    _进行周期性更新低延迟域名();
+
+                    Thread.Sleep(更新间隔);
+                }
+            });
+        }
+
+        private void _进行周期性更新低延迟域名()
+        {
+            double 最低延迟 = double.MaxValue;
+            string 延迟最低的域名 = 全部域名[0];
+            foreach (var 域名 in 全部域名)
+            {
+                double 延迟 = MMPU.测试延迟(获取测试用地址(域名));
+                if (延迟 > 0 && 延迟 < 最低延迟)
+                {
+                    最低延迟 = 延迟;
+                    延迟最低的域名 = 域名;
+                }
+            }
+            this.延迟最低的域名 = 延迟最低的域名;
+        }
+
+        public static string 获取测试用地址(string 域名) => "https://" + 域名 + "/v1/living";
+
+        public static bool 尝试Ping域名(string 域名, out long 延迟)
+        {
+            Ping pinger = null;
+            延迟 = -1;
+
+            try
+            {
+                pinger = new Ping();
+                PingReply reply = pinger.Send(域名);
+                if (reply.Status != IPStatus.Success) return false;
+
+                延迟 = reply.RoundtripTime;
+                return true;
+            }
+            catch (PingException)
+            {
+                return false;
+            }
+            finally
+            {
+                if (pinger != null)
+                {
+                    pinger.Dispose();
+                }
+            }
         }
     }
 }
